@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>文件上传</title>
+    <script src="js/jquery1.8.0.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="css/iview.css">
+    <script type="text/javascript" src="js/vue.min.js"></script>
+    <script type="text/javascript" src="js/iview.min.js"></script>
+</head>
+<style>
+    body{
+        background-color: gray;
+    }
+
+</style>
+<div id="app">
+    <script src="js/canvas-nest.min.js" count="200" zindex="-2" opacity="0.5" color="255,255,255" type="text/javascript"></script>
+    <canvas id="c_n1" width="1161" height="904" style="position: fixed; top: 0px; left: 0px; z-index: -2; opacity: 0.5;"></canvas>
+    <Upload
+            multiple
+            :on-success="handleSuccess"
+            action="http://47.105.52.207:8501/upload" style="position: fixed;top: 5%;left: 3%;">
+        <i-button  icon="ios-cloud-upload-outline">文件上传</i-button>
+    </Upload>
+    <div style="margin-left: 60%;margin-top: 1%;">
+        <ul>
+            <li v-for="fi in file">
+                <img :src="fi.url" width="220px" height="220px" v-if="fi.type==0">
+
+                <video width="220px" height="220px" controls v-if="fi.type==1">
+                    <source :src="fi.url" type="video/mp4">
+                    您的浏览器不支持HTML5 video 标签。
+                </video>
+
+                <div style="float: left;height: 32px;" v-if="fi.type==3">
+                    <a :href="fi.url" style="font-size: 19px;">{{fi.attachmentName}}</a>
+                </div>
+
+                <audio style="width:220px;" controls v-if="fi.type==2">
+                    <source :src="fi.url" type="audio/ogg">
+                    <source :src="fi.url" type="audio/mpeg">
+                    您的浏览器不支持 audio 元素。
+                </audio>
+                <i-button @click="delAttachment(fi.id)" type="warning" style="float: right;margin-right: 46%;">删除</i-button>
+            </li>
+        </ul>
+    </div>
+</div>
+</body>
+<script>
+    var app = new Vue({
+        el: '#app',
+
+        data: {
+            file:[],
+        },
+
+        mounted: function() {
+            var m = this;
+            m.getAttachmentList();
+        },
+
+        methods: {
+            getAttachmentList: function() {
+                var m = this;
+                $.get("/attachment/findAll",
+                    function(data) {
+                        if (data.code == 1) {
+                            m.file=data.data;
+                        } else {
+                            m.$Message.error(data.msg);
+                        }
+                    }, 'json');
+            },
+
+            delAttachment: function(id) {
+                var m = this;
+                $.post("attachment/del", {id: id},
+                    function(data) {
+                        if (data.code == 1) {
+                            m.$Message.success("删除成功!");
+                            m.getAttachmentList();
+                        } else {
+                            m.$Message.error(data.msg);
+                        }
+                    }, 'json');
+            },
+
+            handleSuccess (res,file) {
+                var m = this;
+                if(res.code=200){
+                    $.post("attachment/addFiles", {urls:res.data[0]},
+                        function(data) {
+                            if (data.code == 1) {
+                                m.getAttachmentList();
+                                m.$Message.success("上传成功!");
+                            } else {
+                                m.$Message.error(data.msg);
+                            }
+                        }, 'json');
+                }
+            }
+        }
+    });
+</script>
+</html>
